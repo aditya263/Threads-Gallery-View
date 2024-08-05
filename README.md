@@ -9,6 +9,10 @@ This is the code to create a custom gallery view similar to Threads when selecti
 5. When reopening the gallery, previously selected images and videos will be shown.
 6. Users can select up to 10 images or videos at a time.
 
+## Demo
+https://github.com/user-attachments/assets/c9c09e16-a384-4510-848a-39eea7e8eda2
+
+
 ## Dependencies
 <details>
      <summary> Click to expand </summary>
