@@ -22,6 +22,8 @@ class AssetThumbnail extends StatefulWidget {
 
 class AssetThumbnailState extends State<AssetThumbnail> {
   Uint8List? _thumbnailData;
+  Duration? _duration;
+  bool _isVideo = false;
 
   @override
   void initState() {
@@ -31,6 +33,16 @@ class AssetThumbnailState extends State<AssetThumbnail> {
 
   Future<void> _loadThumbnail() async {
     final data = await widget.asset.thumbnailData;
+    final type = widget.asset.type;
+
+    if (type == AssetType.video) {
+      _isVideo = true;
+      final videoDuration = widget.asset.videoDuration;
+      setState(() {
+        _duration = videoDuration;
+      });
+    }
+
     setState(() {
       _thumbnailData = data;
     });
@@ -65,19 +77,41 @@ class AssetThumbnailState extends State<AssetThumbnail> {
                 child: Center(
                   child: widget.isSelected
                       ? Text(
-                          '${widget.indexInSelection}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
+                    '${widget.indexInSelection}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
                       : null,
                 ),
               ),
             ),
+            if (_isVideo && _duration != null)
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  color: Colors.black.withOpacity(0.7),
+                  child: Text(
+                    _formatDuration(_duration!),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 }

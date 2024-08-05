@@ -37,6 +37,20 @@ class AlbumSelectionBottomSheet extends StatelessWidget {
     return assets.length;
   }
 
+  Future<String?> _getVideoDuration(AssetPathEntity album) async {
+    final assets = await album.getAssetListRange(start: 0, end: 1);
+    if (assets.isNotEmpty) {
+      final asset = assets.first;
+      if (asset.type == AssetType.video) {
+        final durationMillis = asset.videoDuration;
+        final minutes = durationMillis.inMinutes;
+        final seconds = durationMillis.inSeconds % 60;
+        return '$minutes:${seconds.toString().padLeft(2, '0')}';
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Determine number of items per row
@@ -178,31 +192,61 @@ class AlbumSelectionBottomSheet extends StatelessWidget {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Container(
-                                          width: 120,
-                                          height: 120,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(8.0),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(0.2),
-                                                spreadRadius: 1,
-                                                blurRadius: 4,
-                                                offset: const Offset(0, 4), // Shadow below the item
+                                        Stack(
+                                          children: [
+                                            Container(
+                                              width: 120,
+                                              height: 120,
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(8.0),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(0.2),
+                                                    spreadRadius: 1,
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0, 4), // Shadow below the item
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(8.0),
-                                            child: AspectRatio(
-                                              aspectRatio: 1,
-                                              child: snapshot.connectionState == ConnectionState.waiting
-                                                  ? const Center(child: CircularProgressIndicator())
-                                                  : snapshot.hasError
-                                                  ? const Center(child: Text('Error loading image'))
-                                                  : snapshot.data ?? const SizedBox.shrink(),
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(8.0),
+                                                child: AspectRatio(
+                                                  aspectRatio: 1,
+                                                  child: snapshot.connectionState == ConnectionState.waiting
+                                                      ? const Center(child: CircularProgressIndicator())
+                                                      : snapshot.hasError
+                                                      ? const Center(child: Text('Error loading image'))
+                                                      : snapshot.data ?? const SizedBox.shrink(),
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                            FutureBuilder<String?>(
+                                              future: _getVideoDuration(album),
+                                              builder: (context, snapshot) {
+                                                final duration = snapshot.data;
+                                                return Positioned(
+                                                  bottom: 4.0,
+                                                  right: 4.0,
+                                                  child: duration != null
+                                                      ? Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black.withOpacity(0.6),
+                                                      borderRadius: BorderRadius.circular(4.0),
+                                                    ),
+                                                    child: Text(
+                                                      duration,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 12.0,
+                                                      ),
+                                                    ),
+                                                  )
+                                                      : const SizedBox.shrink(),
+                                                );
+                                              },
+                                            ),
+                                          ],
                                         ),
                                         const SizedBox(height: 8.0), // Space between image and text
                                         Padding(
@@ -254,31 +298,61 @@ class AlbumSelectionBottomSheet extends StatelessWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Container(
-                                        width: 120,
-                                        height: 120,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(8.0),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.2),
-                                              spreadRadius: 1,
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 4), // Shadow below the item
+                                      Stack(
+                                        children: [
+                                          Container(
+                                            width: 120,
+                                            height: 120,
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(8.0),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.2),
+                                                  spreadRadius: 1,
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 4), // Shadow below the item
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(8.0),
-                                          child: AspectRatio(
-                                            aspectRatio: 1,
-                                            child: snapshot.connectionState == ConnectionState.waiting
-                                                ? const Center(child: CircularProgressIndicator())
-                                                : snapshot.hasError
-                                                ? const Center(child: Text('Error loading image'))
-                                                : snapshot.data ?? const SizedBox.shrink(),
+                                            child: ClipRRect(
+                                              borderRadius: BorderRadius.circular(8.0),
+                                              child: AspectRatio(
+                                                aspectRatio: 1,
+                                                child: snapshot.connectionState == ConnectionState.waiting
+                                                    ? const Center(child: CircularProgressIndicator())
+                                                    : snapshot.hasError
+                                                    ? const Center(child: Text('Error loading image'))
+                                                    : snapshot.data ?? const SizedBox.shrink(),
+                                              ),
+                                            ),
                                           ),
-                                        ),
+                                          FutureBuilder<String?>(
+                                            future: _getVideoDuration(album),
+                                            builder: (context, snapshot) {
+                                              final duration = snapshot.data;
+                                              return Positioned(
+                                                bottom: 4.0,
+                                                right: 4.0,
+                                                child: duration != null
+                                                    ? Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black.withOpacity(0.6),
+                                                    borderRadius: BorderRadius.circular(4.0),
+                                                  ),
+                                                  child: Text(
+                                                    duration,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 12.0,
+                                                    ),
+                                                  ),
+                                                )
+                                                    : const SizedBox.shrink(),
+                                              );
+                                            },
+                                          ),
+                                        ],
                                       ),
                                       const SizedBox(height: 8.0), // Space between image and text
                                       Padding(
