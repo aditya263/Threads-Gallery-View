@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:threads_gallery_view/utils/asset_thumbnail_cache.dart';
 
 class AssetThumbnail extends StatefulWidget {
   final AssetEntity asset;
@@ -32,6 +33,17 @@ class AssetThumbnailState extends State<AssetThumbnail> {
   }
 
   Future<void> _loadThumbnail() async {
+    final key = widget.asset.id;
+    final cachedData = AssetThumbnailCache.get(key);
+
+    if (cachedData != null) {
+      setState(() {
+        _thumbnailData = cachedData;
+      });
+      _updateVideoDetails();
+      return;
+    }
+
     final data = await widget.asset.thumbnailData;
     final type = widget.asset.type;
 
@@ -43,9 +55,22 @@ class AssetThumbnailState extends State<AssetThumbnail> {
       });
     }
 
-    setState(() {
-      _thumbnailData = data;
-    });
+    if (data != null) {
+      AssetThumbnailCache.put(key, data);
+      setState(() {
+        _thumbnailData = data;
+      });
+    }
+  }
+
+  Future<void> _updateVideoDetails() async {
+    if (widget.asset.type == AssetType.video) {
+      _isVideo = true;
+      final videoDuration = widget.asset.videoDuration;
+      setState(() {
+        _duration = videoDuration;
+      });
+    }
   }
 
   @override

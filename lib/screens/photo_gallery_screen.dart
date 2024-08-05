@@ -90,20 +90,49 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     });
   }
 
-  void _showAlbumSelectionBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return AlbumSelectionBottomSheet(
-          albums: _albums,
-          onAlbumSelected: (album, albumName) {
-            _onAlbumChanged(album, albumName);
-          },
-        );
-      },
+  void _showAlbumSelectionBottomSheet() async {
+    final recentAlbum = await _fetchRecentAlbum();
+    final allVideosAlbum = await _fetchAllVideosAlbum();
+
+    if (context.mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          return AlbumSelectionBottomSheet(
+            albums: _albums,
+            recentAlbum: recentAlbum,
+            allVideosAlbum: allVideosAlbum,
+            onAlbumSelected: (album, albumName) {
+              _onAlbumChanged(album, albumName);
+            },
+          );
+        },
+      );
+    }
+  }
+
+  Future<AssetPathEntity?> _fetchAllVideosAlbum() async {
+    final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
+      type: RequestType.video,
+      hasAll: true,
     );
+    return albums.isNotEmpty ? albums.first : null;
+  }
+
+  Future<AssetPathEntity?> _fetchRecentAlbum() async {
+    final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
+      type: RequestType.image,
+      hasAll: true,
+    );
+    if (albums.isEmpty) return null;
+
+    final recentAlbum = albums.first;
+    final assets = await recentAlbum.getAssetListRange(start: 0, end: 1);
+    if (assets.isNotEmpty) return recentAlbum;
+
+    return null;
   }
 
   @override
