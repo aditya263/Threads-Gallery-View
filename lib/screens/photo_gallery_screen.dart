@@ -19,6 +19,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
   late List<AssetEntity> _selectedAssets;
   bool _loading = true;
   AssetPathEntity? _selectedAlbum;
+  String? _selectedAlbumName;
   bool _isDoneEnabled = false;
 
   @override
@@ -39,6 +40,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
       setState(() {
         _albums = albums;
         _selectedAlbum = albums[0];
+        _selectedAlbumName = _albums[0].name;
         _loadAssets(_selectedAlbum!);
       });
     }
@@ -52,10 +54,11 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     });
   }
 
-  void _onAlbumChanged(AssetPathEntity? album) {
+  void _onAlbumChanged(AssetPathEntity? album, String? albumName) {
     if (album != null) {
       setState(() {
         _selectedAlbum = album;
+        _selectedAlbumName = albumName ?? album.name;
         _loading = true;
       });
       _loadAssets(album);
@@ -95,8 +98,8 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
       builder: (context) {
         return AlbumSelectionBottomSheet(
           albums: _albums,
-          onAlbumSelected: (album) {
-            _onAlbumChanged(album);
+          onAlbumSelected: (album, albumName) {
+            _onAlbumChanged(album, albumName);
           },
         );
       },
@@ -144,7 +147,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _selectedAlbum?.name ?? 'Select Album',
+                    _selectedAlbumName ?? 'Select Album',
                     style: const TextStyle(
                       fontSize: 16.0,
                       fontWeight: FontWeight.bold,

@@ -3,13 +3,14 @@ import 'package:photo_manager/photo_manager.dart';
 
 class AlbumSelectionBottomSheet extends StatelessWidget {
   final List<AssetPathEntity> albums;
-  final void Function(AssetPathEntity?) onAlbumSelected;
+  final void Function(AssetPathEntity?, String?) onAlbumSelected;
 
   const AlbumSelectionBottomSheet({
     Key? key,
     required this.albums,
     required this.onAlbumSelected,
   }) : super(key: key);
+
 
   Future<Widget> _buildThumbnail(AssetPathEntity album) async {
     final assets = await album.getAssetListRange(start: 0, end: 1);
@@ -51,13 +52,34 @@ class AlbumSelectionBottomSheet extends StatelessWidget {
     return null;
   }
 
+  Future<AssetPathEntity?> _fetchAllVideosAlbum() async {
+    final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
+      type: RequestType.video,
+      hasAll: true,
+    );
+    return albums.isNotEmpty ? albums.first : null;
+  }
+
+  Future<AssetPathEntity?> _fetchRecentAlbum() async {
+    final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
+      type: RequestType.image,
+      hasAll: true,
+    );
+    if (albums.isEmpty) return null;
+
+    final recentAlbum = albums.first;
+    final assets = await recentAlbum.getAssetListRange(start: 0, end: 1);
+    if (assets.isNotEmpty) return recentAlbum;
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Determine number of items per row
     final itemCount = albums.length;
-    final itemsPerRow = (itemCount % 2 == 0)
-        ? itemCount ~/ 2
-        : (itemCount ~/ 2) + 1;
+    final itemsPerRow =
+        (itemCount % 2 == 0) ? itemCount ~/ 2 : (itemCount ~/ 2) + 1;
 
     // Split items into rows
     final rows = <List<AssetPathEntity>>[];
@@ -117,52 +139,80 @@ class AlbumSelectionBottomSheet extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                        child: const CircleAvatar(
-                          backgroundColor: Colors.blue,
-                          radius: 24.0,
-                          child: Icon(
-                            Icons.access_time,
-                            color: Colors.white,
+                  FutureBuilder<AssetPathEntity?>(
+                    future: _fetchRecentAlbum(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const CircularProgressIndicator();
+                      } else if (snapshot.hasError) {
+                        return const Text('Error fetching recents');
+                      } else if (snapshot.data == null) {
+                        return const SizedBox.shrink();
+                      }
+                      final album = snapshot.data!;
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context);
+                              onAlbumSelected(album,"Recent");
+                            },
+                            child: const CircleAvatar(
+                              backgroundColor: Colors.blue,
+                              radius: 24.0,
+                              child: Icon(
+                                Icons.access_time,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 5.0),
-                      const Text(
-                        'Recents',
-                        style: TextStyle(fontSize: 14.0),
-                      ),
-                    ],
+                          const SizedBox(height: 5.0),
+                          const Text(
+                            'Recents',
+                            style: TextStyle(fontSize: 14.0),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(width: 16.0),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                        child: const CircleAvatar(
-                          backgroundColor: Colors.green,
-                          radius: 24.0,
-                          child: Icon(
-                            Icons.video_library,
-                            color: Colors.white,
+                  FutureBuilder<AssetPathEntity?>(
+                    future: _fetchAllVideosAlbum(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const CircularProgressIndicator();
+                      } else if (snapshot.hasError) {
+                        return const Text('Error fetching videos');
+                      } else if (snapshot.data == null) {
+                        return const SizedBox.shrink();
+                      }
+                      final album = snapshot.data!;
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context);
+                              onAlbumSelected(album,"Videos");
+                            },
+                            child: const CircleAvatar(
+                              backgroundColor: Colors.green,
+                              radius: 24.0,
+                              child: Icon(
+                                Icons.video_library,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 4.0),
-                      const Text(
-                        'Videos',
-                        style: TextStyle(fontSize: 14.0),
-                      ),
-                    ],
+                          const SizedBox(height: 4.0),
+                          const Text(
+                            'Videos',
+                            style: TextStyle(fontSize: 14.0),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -174,23 +224,26 @@ class AlbumSelectionBottomSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // First row
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16.0), // Space between rows
+                      SizedBox(
+                        height: 200.0, // Fixed height constraint for first row
                         child: Row(
                           children: row1.map((album) {
                             return GestureDetector(
                               onTap: () {
                                 Navigator.pop(context);
-                                onAlbumSelected(album);
+                                onAlbumSelected(album,null);
                               },
                               child: FutureBuilder<Widget>(
                                 future: _buildThumbnail(album),
                                 builder: (context, snapshot) {
                                   return Container(
-                                    width: 120, // Set a fixed width for each item
-                                    margin: const EdgeInsets.only(right: 16.0), // Space between items
+                                    width: 120,
+                                    // Set a fixed width for each item
+                                    margin: const EdgeInsets.only(right: 16.0),
+                                    // Space between items
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Stack(
                                           children: [
@@ -198,25 +251,38 @@ class AlbumSelectionBottomSheet extends StatelessWidget {
                                               width: 120,
                                               height: 120,
                                               decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(8.0),
+                                                borderRadius:
+                                                    BorderRadius.circular(8.0),
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: Colors.black.withOpacity(0.2),
+                                                    color: Colors.black
+                                                        .withOpacity(0.2),
                                                     spreadRadius: 1,
                                                     blurRadius: 4,
-                                                    offset: const Offset(0, 4), // Shadow below the item
+                                                    offset: const Offset(0,
+                                                        4), // Shadow below the item
                                                   ),
                                                 ],
                                               ),
                                               child: ClipRRect(
-                                                borderRadius: BorderRadius.circular(8.0),
+                                                borderRadius:
+                                                    BorderRadius.circular(8.0),
                                                 child: AspectRatio(
                                                   aspectRatio: 1,
-                                                  child: snapshot.connectionState == ConnectionState.waiting
-                                                      ? const Center(child: CircularProgressIndicator())
+                                                  child: snapshot
+                                                              .connectionState ==
+                                                          ConnectionState
+                                                              .waiting
+                                                      ? const Center(
+                                                          child:
+                                                              CircularProgressIndicator())
                                                       : snapshot.hasError
-                                                      ? const Center(child: Text('Error loading image'))
-                                                      : snapshot.data ?? const SizedBox.shrink(),
+                                                          ? const Center(
+                                                              child: Text(
+                                                                  'Error loading image'))
+                                                          : snapshot.data ??
+                                                              const SizedBox
+                                                                  .shrink(),
                                                 ),
                                               ),
                                             ),
@@ -229,43 +295,63 @@ class AlbumSelectionBottomSheet extends StatelessWidget {
                                                   right: 4.0,
                                                   child: duration != null
                                                       ? Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.black.withOpacity(0.6),
-                                                      borderRadius: BorderRadius.circular(4.0),
-                                                    ),
-                                                    child: Text(
-                                                      duration,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 12.0,
-                                                      ),
-                                                    ),
-                                                  )
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      4.0,
+                                                                  vertical:
+                                                                      2.0),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: Colors.black
+                                                                .withOpacity(
+                                                                    0.6),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        4.0),
+                                                          ),
+                                                          child: Text(
+                                                            duration,
+                                                            style:
+                                                                const TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontSize: 12.0,
+                                                            ),
+                                                          ),
+                                                        )
                                                       : const SizedBox.shrink(),
                                                 );
                                               },
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 8.0), // Space between image and text
+                                        const SizedBox(height: 8.0),
+                                        // Space between image and text
                                         Padding(
                                           padding: const EdgeInsets.all(4.0),
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 album.name,
-                                                style: const TextStyle(fontSize: 16.0),
+                                                style: const TextStyle(
+                                                    fontSize: 16.0),
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                               FutureBuilder<int>(
                                                 future: _getAssetCount(album),
                                                 builder: (context, snapshot) {
-                                                  final itemCount = snapshot.data ?? 0;
+                                                  final itemCount =
+                                                      snapshot.data ?? 0;
                                                   return Text(
                                                     '$itemCount items',
-                                                    style: const TextStyle(fontSize: 14.0, color: Colors.grey),
+                                                    style: const TextStyle(
+                                                        fontSize: 14.0,
+                                                        color: Colors.grey),
                                                   );
                                                 },
                                               ),
@@ -282,109 +368,148 @@ class AlbumSelectionBottomSheet extends StatelessWidget {
                         ),
                       ),
                       // Second row
-                      Row(
-                        children: row2.map((album) {
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.pop(context);
-                              onAlbumSelected(album);
-                            },
-                            child: FutureBuilder<Widget>(
-                              future: _buildThumbnail(album),
-                              builder: (context, snapshot) {
-                                return Container(
-                                  width: 120, // Set a fixed width for each item
-                                  margin: const EdgeInsets.only(right: 16.0), // Space between items
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Stack(
-                                        children: [
-                                          Container(
-                                            width: 120,
-                                            height: 120,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(8.0),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black.withOpacity(0.2),
-                                                  spreadRadius: 1,
-                                                  blurRadius: 4,
-                                                  offset: const Offset(0, 4), // Shadow below the item
+                      SizedBox(
+                        height: 200.0,
+                        child: Row(
+                          children: row2.map((album) {
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.pop(context);
+                                onAlbumSelected(album,null);
+                              },
+                              child: FutureBuilder<Widget>(
+                                future: _buildThumbnail(album),
+                                builder: (context, snapshot) {
+                                  return Container(
+                                    width: 120,
+                                    // Set a fixed width for each item
+                                    margin: const EdgeInsets.only(right: 16.0),
+                                    // Space between items
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Stack(
+                                          children: [
+                                            Container(
+                                              width: 120,
+                                              height: 120,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(8.0),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.2),
+                                                    spreadRadius: 1,
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0,
+                                                        4), // Shadow below the item
+                                                  ),
+                                                ],
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8.0),
+                                                child: AspectRatio(
+                                                  aspectRatio: 1,
+                                                  child: snapshot
+                                                              .connectionState ==
+                                                          ConnectionState
+                                                              .waiting
+                                                      ? const Center(
+                                                          child:
+                                                              CircularProgressIndicator())
+                                                      : snapshot.hasError
+                                                          ? const Center(
+                                                              child: Text(
+                                                                  'Error loading image'))
+                                                          : snapshot.data ??
+                                                              const SizedBox
+                                                                  .shrink(),
                                                 ),
-                                              ],
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(8.0),
-                                              child: AspectRatio(
-                                                aspectRatio: 1,
-                                                child: snapshot.connectionState == ConnectionState.waiting
-                                                    ? const Center(child: CircularProgressIndicator())
-                                                    : snapshot.hasError
-                                                    ? const Center(child: Text('Error loading image'))
-                                                    : snapshot.data ?? const SizedBox.shrink(),
                                               ),
                                             ),
-                                          ),
-                                          FutureBuilder<String?>(
-                                            future: _getVideoDuration(album),
-                                            builder: (context, snapshot) {
-                                              final duration = snapshot.data;
-                                              return Positioned(
-                                                bottom: 4.0,
-                                                right: 4.0,
-                                                child: duration != null
-                                                    ? Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black.withOpacity(0.6),
-                                                    borderRadius: BorderRadius.circular(4.0),
-                                                  ),
-                                                  child: Text(
-                                                    duration,
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 12.0,
-                                                    ),
-                                                  ),
-                                                )
-                                                    : const SizedBox.shrink(),
-                                              );
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8.0), // Space between image and text
-                                      Padding(
-                                        padding: const EdgeInsets.all(4.0),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              album.name,
-                                              style: const TextStyle(fontSize: 16.0),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            FutureBuilder<int>(
-                                              future: _getAssetCount(album),
+                                            FutureBuilder<String?>(
+                                              future: _getVideoDuration(album),
                                               builder: (context, snapshot) {
-                                                final itemCount = snapshot.data ?? 0;
-                                                return Text(
-                                                  '$itemCount items',
-                                                  style: const TextStyle(fontSize: 14.0, color: Colors.grey),
+                                                final duration = snapshot.data;
+                                                return Positioned(
+                                                  bottom: 4.0,
+                                                  right: 4.0,
+                                                  child: duration != null
+                                                      ? Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      4.0,
+                                                                  vertical:
+                                                                      2.0),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: Colors.black
+                                                                .withOpacity(
+                                                                    0.6),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        4.0),
+                                                          ),
+                                                          child: Text(
+                                                            duration,
+                                                            style:
+                                                                const TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontSize: 12.0,
+                                                            ),
+                                                          ),
+                                                        )
+                                                      : const SizedBox.shrink(),
                                                 );
                                               },
                                             ),
                                           ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        }).toList(),
+                                        const SizedBox(height: 8.0),
+                                        // Space between image and text
+                                        Padding(
+                                          padding: const EdgeInsets.all(4.0),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                album.name,
+                                                style: const TextStyle(
+                                                    fontSize: 16.0),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              FutureBuilder<int>(
+                                                future: _getAssetCount(album),
+                                                builder: (context, snapshot) {
+                                                  final itemCount =
+                                                      snapshot.data ?? 0;
+                                                  return Text(
+                                                    '$itemCount items',
+                                                    style: const TextStyle(
+                                                        fontSize: 14.0,
+                                                        color: Colors.grey),
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ],
                   ),

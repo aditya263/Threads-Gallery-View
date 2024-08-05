@@ -77,12 +77,12 @@ class AssetThumbnailState extends State<AssetThumbnail> {
                 child: Center(
                   child: widget.isSelected
                       ? Text(
-                    '${widget.indexInSelection}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
+                          '${widget.indexInSelection}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
                       : null,
                 ),
               ),
@@ -92,7 +92,8 @@ class AssetThumbnailState extends State<AssetThumbnail> {
                 bottom: 8,
                 right: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   color: Colors.black.withOpacity(0.7),
                   child: Text(
                     _formatDuration(_duration!),
