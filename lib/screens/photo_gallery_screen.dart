@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:threads_gallery_view/screens/album_selection_screen.dart';
 import 'package:threads_gallery_view/utils/permission_helper.dart';
 import 'widgets/asset_grid_view.dart';
 
@@ -86,6 +87,22 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     });
   }
 
+  void _showAlbumSelectionBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return AlbumSelectionBottomSheet(
+          albums: _albums,
+          onAlbumSelected: (album) {
+            _onAlbumChanged(album);
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,35 +133,28 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Divider(height: 1.0, color: Colors.grey),
-          // Divider below AppBar
-          _albums.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
-                      DropdownButton<AssetPathEntity>(
-                        value: _selectedAlbum,
-                        items: _albums.map((album) {
-                          return DropdownMenuItem(
-                            value: album,
-                            child: Text(album.name),
-                          );
-                        }).toList(),
-                        onChanged: (album) {
-                          _onAlbumChanged(album);
-                        },
-                        hint: const Text('Select Album'),
-                        underline: const SizedBox(),
-                        isExpanded: false,
-                        icon: const Icon(Icons.keyboard_arrow_down),
-                        iconSize: 24.0,
-                      ),
-                    ],
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: GestureDetector(
+              onTap: _showAlbumSelectionBottomSheet,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _selectedAlbum?.name ?? 'Select Album',
+                    style: const TextStyle(
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
+                  const Icon(Icons.keyboard_arrow_down),
+                ],
+              ),
+            ),
+          ),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
